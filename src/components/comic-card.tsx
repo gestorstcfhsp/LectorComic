@@ -6,12 +6,26 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import type { Comic } from '@/lib/db';
+import { Button } from './ui/button';
+import { Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type ComicCardProps = {
   comic: Comic;
+  onDelete: (id: string, title: string) => void;
 };
 
-export function ComicCard({ comic }: ComicCardProps) {
+export function ComicCard({ comic, onDelete }: ComicCardProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,9 +45,51 @@ export function ComicCard({ comic }: ComicCardProps) {
     };
   }, [comic.file]);
 
+  const confirmDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete(comic.id, comic.title);
+  };
+  
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <Link href={`/read/${comic.id}`} className="group block">
-      <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary">
+      <Card className="relative overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-2 right-2 z-10 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+              onClick={stopPropagation}
+              aria-label="Eliminar cómic"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción no se puede deshacer. Esto eliminará permanentemente el cómic
+                "{comic.title}" de tu biblioteca.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={stopPropagation}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={confirmDelete}
+              >
+                Sí, eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <div className="aspect-[2/3] relative bg-muted">
           {coverUrl ? (
             <Image

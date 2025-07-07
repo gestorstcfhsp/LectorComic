@@ -12,11 +12,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronsUpDown } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const comics = useLiveQuery(
     () => db.comics.orderBy('createdAt').reverse().toArray()
   );
+  const { toast } = useToast();
 
   const handleAddComic = async (data: Partial<ExtractComicMetadataOutput & { file: File | null; type: string }>) => {
     if (!data.file || !data.title || !data.type) return;
@@ -39,6 +41,23 @@ export default function Home() {
     } catch (error) {
       console.error("Failed to add comic to DB:", error);
       // Here you could use a toast to notify the user of the failure
+    }
+  };
+
+  const handleDeleteComic = async (id: string, title: string) => {
+    try {
+      await db.comics.delete(id);
+      toast({
+        title: "Cómic Eliminado",
+        description: `"${title}" ha sido eliminado de tu biblioteca.`,
+      });
+    } catch (error) {
+      console.error("Failed to delete comic:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el cómic. Por favor, inténtalo de nuevo.",
+      });
     }
   };
 
@@ -108,7 +127,7 @@ export default function Home() {
                           <CollapsibleContent>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
                               {comicList.map((comic) => (
-                                <ComicCard key={comic.id} comic={comic} />
+                                <ComicCard key={comic.id} comic={comic} onDelete={handleDeleteComic} />
                               ))}
                             </div>
                           </CollapsibleContent>
