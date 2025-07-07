@@ -65,7 +65,7 @@ export function ComicCard({ comic, onDelete }: ComicCardProps) {
               variant="destructive"
               size="icon"
               className="absolute top-2 right-2 z-10 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-              onClick={stopPropagation}
+              onClick={(e) => e.preventDefault()}
               aria-label="Eliminar cómic"
             >
               <Trash2 className="h-4 w-4" />
