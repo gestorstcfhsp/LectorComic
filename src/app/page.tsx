@@ -11,38 +11,99 @@ import { db, type Comic } from '@/lib/db';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronsUpDown } from 'lucide-react';
+import { ChevronsUpDown, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
   const comics = useLiveQuery(
     () => db.comics.orderBy('createdAt').reverse().toArray()
   );
   const { toast } = useToast();
+  
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [comicToEdit, setComicToEdit] = React.useState<Comic | null>(null);
 
-  const handleAddComic = async (data: Partial<ExtractComicMetadataOutput & { file: File | null; type: string }>) => {
-    if (!data.file || !data.title || !data.type) return;
+  const handleOpenAddDialog = () => {
+    setComicToEdit(null);
+    setIsDialogOpen(true);
+  };
 
-    const newComic: Comic = {
-      id: crypto.randomUUID(),
-      title: data.title,
-      author: data.author || '',
-      series: data.series || '',
-      description: data.description || '',
-      tags: data.tags || [],
-      type: data.type,
-      file: data.file,
-      aiHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
-      createdAt: new Date(),
-    };
+  const handleOpenEditDialog = (comic: Comic) => {
+    setComicToEdit(comic);
+    setIsDialogOpen(true);
+  };
 
-    try {
-      await db.comics.add(newComic);
-    } catch (error) {
-      console.error("Failed to add comic to DB:", error);
-      // Here you could use a toast to notify the user of the failure
+  const handleSaveComic = async (
+    data: Partial<ExtractComicMetadataOutput & { file: File | Blob | null; type: string }>,
+    id?: string
+  ) => {
+    if (!data.file || !data.title || !data.type) {
+        toast({
+            variant: "destructive",
+            title: "Faltan datos",
+            description: "El título, el tipo y el archivo del cómic son obligatorios.",
+        });
+        return;
+    }
+
+    if (id) {
+      try {
+        const updateData: Partial<Comic> = {
+          title: data.title,
+          author: data.author || '',
+          series: data.series || '',
+          description: data.description || '',
+          tags: data.tags || [],
+          type: data.type,
+          aiHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
+          file: data.file,
+        };
+        
+        await db.comics.update(id, updateData);
+        toast({
+          title: "Cómic Actualizado",
+          description: `"${data.title}" ha sido actualizado en tu biblioteca.`,
+        });
+      } catch (error) {
+        console.error("Failed to update comic:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al actualizar",
+          description: "No se pudo actualizar el cómic. Por favor, inténtalo de nuevo.",
+        });
+      }
+    } else {
+      const newComic: Comic = {
+        id: crypto.randomUUID(),
+        title: data.title,
+        author: data.author || '',
+        series: data.series || '',
+        description: data.description || '',
+        tags: data.tags || [],
+        type: data.type,
+        file: data.file as Blob,
+        aiHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
+        createdAt: new Date(),
+      };
+
+      try {
+        await db.comics.add(newComic);
+        toast({
+            title: "Cómic Añadido",
+            description: `"${data.title}" se ha añadido a tu biblioteca.`,
+        });
+      } catch (error) {
+        console.error("Failed to add comic to DB:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al añadir",
+            description: "No se pudo añadir el cómic. Por favor, inténtalo de nuevo.",
+        });
+      }
     }
   };
+
 
   const handleDeleteComic = async (id: string, title: string) => {
     try {
@@ -100,7 +161,10 @@ export default function Home() {
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header>
-        <AddComicDialog onComicAdded={handleAddComic} />
+        <Button onClick={handleOpenAddDialog}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Añadir Cómic
+        </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8">
         <div className="mb-8">
@@ -127,7 +191,7 @@ export default function Home() {
                           <CollapsibleContent>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
                               {comicList.map((comic) => (
-                                <ComicCard key={comic.id} comic={comic} onDelete={handleDeleteComic} />
+                                <ComicCard key={comic.id} comic={comic} onDelete={handleDeleteComic} onEdit={handleOpenEditDialog} />
                               ))}
                             </div>
                           </CollapsibleContent>
@@ -163,6 +227,12 @@ export default function Home() {
             </div>
           )}
       </main>
+      <AddComicDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSave={handleSaveComic}
+        comicToEdit={comicToEdit}
+      />
     </div>
   );
 }

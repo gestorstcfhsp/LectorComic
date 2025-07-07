@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +20,7 @@ import { extractComicMetadata } from "@/ai/flows/extract-comic-metadata-flow"
 import type { ExtractComicMetadataOutput } from "@/ai/flows/extract-comic-metadata-flow"
 import { generateComicCover } from "@/ai/flows/generate-comic-cover-flow"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import type { Comic } from "@/lib/db"
 
 const toDataUri = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -47,16 +47,33 @@ const initialFormData = {
     file: null,
 };
 
-type AddComicDialogProps = {
-  onComicAdded: (data: Partial<ExtractComicMetadataOutput & { file: File | null; type: string }>) => void;
+type ComicDialogProps = {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onSave: (data: Partial<ExtractComicMetadataOutput & { file: File | Blob | null; type: string }>, id?: string) => void;
+  comicToEdit?: Comic | null;
 };
 
-export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | null; type: string }>>(initialFormData);
+export function AddComicDialog({ isOpen, onOpenChange, onSave, comicToEdit }: ComicDialogProps) {
+  const isEditing = !!comicToEdit;
+  const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | Blob | null; type: string }>>(initialFormData);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const { toast } = useToast();
+  
+  useEffect(() => {
+    if (isOpen && comicToEdit) {
+      setFormData({
+        title: comicToEdit.title,
+        author: comicToEdit.author,
+        series: comicToEdit.series,
+        description: comicToEdit.description,
+        tags: comicToEdit.tags,
+        type: comicToEdit.type,
+        file: comicToEdit.file,
+      });
+    }
+  }, [isOpen, comicToEdit]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -64,7 +81,7 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
   }
 
   const handleExtract = async () => {
-    if (!formData.file || !formData.file.type.startsWith('image/')) {
+    if (!formData.file || !(formData.file instanceof File) || !formData.file.type.startsWith('image/')) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -160,49 +177,29 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!formData.file || !formData.title || !formData.type) {
-      toast({
-        variant: "destructive",
-        title: "Faltan datos",
-        description: "El título, el tipo y el archivo del cómic son obligatorios.",
-      });
-      return;
-    }
-    
-    onComicAdded(formData);
-    
-    toast({
-      title: "Cómic añadido",
-      description: `"${formData.title}" se ha añadido a tu biblioteca.`,
-    });
-
-    setOpen(false);
+    onSave(formData, comicToEdit?.id);
+    onOpenChange(false);
   }
 
-  const handleOpenChange = (isOpen: boolean) => {
-    setOpen(isOpen);
-    if (!isOpen) {
+  const handleDialogStateChange = (openState: boolean) => {
+    if (!openState) {
       setFormData(initialFormData);
       setIsExtracting(false);
       setIsGeneratingCover(false);
     }
+    onOpenChange(openState);
   }
 
+  const isExtractDisabled = isExtracting || !formData.file || !(formData.file instanceof File) || !formData.file.type.startsWith('image/');
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Añadir Cómic
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={handleDialogStateChange}>
       <DialogContent className="sm:max-w-[520px]">
         <form onSubmit={handleSave}>
           <DialogHeader>
-            <DialogTitle className="font-headline">Añadir Nuevo Cómic</DialogTitle>
+            <DialogTitle className="font-headline">{isEditing ? "Editar Cómic" : "Añadir Nuevo Cómic"}</DialogTitle>
             <DialogDescription>
-              Introduce los detalles de tu cómic o sube su portada para que la IA los extraiga.
+              {isEditing ? "Modifica los detalles de tu cómic." : "Introduce los detalles de tu cómic o sube su portada para que la IA los extraiga."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -221,7 +218,7 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
                   variant="outline" 
                   size="icon"
                   onClick={handleExtract} 
-                  disabled={isExtracting || !formData.file || !formData.file.type.startsWith('image/')}
+                  disabled={isExtractDisabled}
                   aria-label="Extraer datos con IA"
                 >
                   {isExtracting ? <Loader2 className="animate-spin" /> : <Wand2 />}
@@ -292,7 +289,7 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Guardar Cómic</Button>
+            <Button type="submit">{isEditing ? "Guardar Cambios" : "Guardar Cómic"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

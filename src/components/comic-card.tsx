@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import type { Comic } from '@/lib/db';
 import { Button } from './ui/button';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,21 +23,20 @@ import {
 type ComicCardProps = {
   comic: Comic;
   onDelete: (id: string, title: string) => void;
+  onEdit: (comic: Comic) => void;
 };
 
-export function ComicCard({ comic, onDelete }: ComicCardProps) {
+export function ComicCard({ comic, onDelete, onEdit }: ComicCardProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let url: string | null = null;
     
-    // We only create an object URL for image files
-    if (comic.file && comic.file.type.startsWith('image/')) {
+    if (comic.file && (comic.file instanceof File || comic.file instanceof Blob) && comic.file.type.startsWith('image/')) {
       url = URL.createObjectURL(comic.file);
       setCoverUrl(url);
     }
 
-    // Cleanup function to revoke the object URL
     return () => {
       if (url) {
         URL.revokeObjectURL(url);
@@ -50,42 +49,49 @@ export function ComicCard({ comic, onDelete }: ComicCardProps) {
   };
 
   return (
-    // The main wrapper is now a div, allowing the Link and AlertDialog to be siblings.
     <div className="group relative">
-      <AlertDialog>
-        {/* The trigger is an absolutely positioned button that appears on hover.
-            It is NOT a child of the Link component, so clicking it won't trigger navigation. */}
-        <AlertDialogTrigger asChild>
+       <div className="absolute top-2 right-2 z-10 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
           <Button
-            variant="destructive"
+            variant="secondary"
             size="icon"
-            className="absolute top-2 right-2 z-10 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-            aria-label="Eliminar cómic"
+            className="h-8 w-8"
+            onClick={() => onEdit(comic)}
+            aria-label="Editar cómic"
           >
-            <Trash2 className="h-4 w-4" />
+            <Pencil className="h-4 w-4" />
           </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el cómic
-              "{comic.title}" de tu biblioteca.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={confirmDelete}
-            >
-              Sí, eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Eliminar cómic"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción no se puede deshacer. Esto eliminará permanentemente el cómic
+                  "{comic.title}" de tu biblioteca.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={confirmDelete}
+                >
+                  Sí, eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+      </div>
 
-      {/* The entire card is now wrapped in the link, separate from the delete button trigger. */}
       <Link href={`/read/${comic.id}`} className="block">
         <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary">
           <div className="aspect-[2/3] relative bg-muted">
@@ -97,10 +103,9 @@ export function ComicCard({ comic, onDelete }: ComicCardProps) {
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint={comic.aiHint}
-                unoptimized={true} // Necessary for blob URLs
+                unoptimized={true}
               />
             ) : (
-              // Placeholder for non-image files
               <div className="flex h-full w-full items-center justify-center p-4">
                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground opacity-50"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
               </div>
