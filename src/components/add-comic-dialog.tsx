@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -16,7 +17,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { PlusCircle, Sparkles, Loader2, Wand2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { extractComicMetadata, type ExtractComicMetadataOutput } from "@/ai/flows/extract-comic-metadata-flow"
+import { extractComicMetadata } from "@/ai/flows/extract-comic-metadata-flow"
+import type { ExtractComicMetadataOutput } from "@/ai/flows/extract-comic-metadata-flow"
 
 const toDataUri = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -27,15 +29,18 @@ const toDataUri = (file: File): Promise<string> => {
   });
 };
 
-export function AddComicDialog() {
-  const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | null }>>({
+const initialFormData = {
     title: '',
     author: '',
     series: '',
     tags: [],
     description: '',
     file: null,
-  });
+};
+
+export function AddComicDialog() {
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | null }>>(initialFormData);
   const [isExtracting, setIsExtracting] = useState(false);
   const { toast } = useToast();
 
@@ -93,8 +98,41 @@ export function AddComicDialog() {
     setFormData(prev => ({ ...prev, [id]: id === 'tags' ? value.split(',').map(t => t.trim()) : value }));
   }
 
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!formData.file || !formData.title) {
+      toast({
+        variant: "destructive",
+        title: "Faltan datos",
+        description: "El título y el archivo del cómic son obligatorios.",
+      });
+      return;
+    }
+    
+    // In a real app, you would upload the file and save the data.
+    // For now, we will just log it to the console.
+    console.log("Guardando cómic:", formData);
+    
+    toast({
+      title: "Cómic guardado",
+      description: `"${formData.title}" ha sido añadido a tu biblioteca (revisa la consola).`,
+    });
+
+    setOpen(false); // Close dialog
+  }
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      // Reset form when dialog closes
+      setFormData(initialFormData);
+      setIsExtracting(false);
+    }
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -102,78 +140,83 @@ export function AddComicDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
-          <DialogTitle className="font-headline">Añadir Nuevo Cómic</DialogTitle>
-          <DialogDescription>
-            Introduce los detalles de tu cómic o sube su portada para que la IA los extraiga.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-           <div className="space-y-2">
-            <Label htmlFor="cover">Archivo del Cómic (.cbr, .pdf, o imagen de portada)</Label>
-            <div className="flex items-center gap-2">
-              <Input 
-                id="cover" 
-                type="file" 
-                className="flex-grow"
-                accept="image/*,.cbr,.cbz,.pdf"
-                onChange={handleFileChange}
-              />
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={handleExtract} 
-                disabled={isExtracting || !formData.file || !formData.file.type.startsWith('image/')}
-                aria-label="Extraer datos con IA"
-              >
-                {isExtracting ? <Loader2 className="animate-spin" /> : <Wand2 />}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">Sube una imagen de portada para activar la extracción con IA.</p>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
-              Título
-            </Label>
-            <Input id="title" placeholder="p.ej., The Dark Knight Returns" className="col-span-3" value={formData.title} onChange={handleInputChange} />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="author" className="text-right">
-              Autor
-            </Label>
-            <Input id="author" placeholder="p.ej., Frank Miller" className="col-span-3" value={formData.author} onChange={handleInputChange} />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="series" className="text-right">
-              Saga/Serie
-            </Label>
-            <Input id="series" placeholder="p.ej., Batman" className="col-span-3" value={formData.series} onChange={handleInputChange}/>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tags" className="text-right">
-              Etiquetas
-            </Label>
-            <Input id="tags" placeholder="p.ej., superhéroe, clásico, dc" className="col-span-3" value={Array.isArray(formData.tags) ? formData.tags.join(', ') : ''} onChange={handleInputChange} />
-          </div>
-           <div className="grid grid-cols-4 items-start gap-4">
-             <Label htmlFor="description" className="text-right pt-2">
-              Descripción
-            </Label>
-            <Textarea id="description" placeholder="Un breve resumen del cómic..." className="col-span-3" value={formData.description} onChange={handleInputChange} />
-          </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-             <div className="col-start-2 col-span-3">
-                <Button variant="outline" className="w-full">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generar Portada con IA
+        <form onSubmit={handleSave}>
+          <DialogHeader>
+            <DialogTitle className="font-headline">Añadir Nuevo Cómic</DialogTitle>
+            <DialogDescription>
+              Introduce los detalles de tu cómic o sube su portada para que la IA los extraiga.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="cover">Archivo del Cómic (.cbr, .pdf, o imagen de portada)</Label>
+              <div className="flex items-center gap-2">
+                <Input 
+                  id="cover" 
+                  type="file" 
+                  className="flex-grow"
+                  accept="image/*,.cbr,.cbz,.pdf"
+                  onChange={handleFileChange}
+                />
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="icon"
+                  onClick={handleExtract} 
+                  disabled={isExtracting || !formData.file || !formData.file.type.startsWith('image/')}
+                  aria-label="Extraer datos con IA"
+                >
+                  {isExtracting ? <Loader2 className="animate-spin" /> : <Wand2 />}
                 </Button>
-             </div>
+              </div>
+              <p className="text-xs text-muted-foreground">Sube una imagen de portada para activar la extracción con IA.</p>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Título
+              </Label>
+              <Input id="title" placeholder="p.ej., The Dark Knight Returns" className="col-span-3" value={formData.title} onChange={handleInputChange} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="author" className="text-right">
+                Autor
+              </Label>
+              <Input id="author" placeholder="p.ej., Frank Miller" className="col-span-3" value={formData.author} onChange={handleInputChange} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="series" className="text-right">
+                Saga/Serie
+              </Label>
+              <Input id="series" placeholder="p.ej., Batman" className="col-span-3" value={formData.series} onChange={handleInputChange}/>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tags" className="text-right">
+                Etiquetas
+              </Label>
+              <Input id="tags" placeholder="p.ej., superhéroe, clásico, dc" className="col-span-3" value={Array.isArray(formData.tags) ? formData.tags.join(', ') : ''} onChange={handleInputChange} />
+            </div>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right pt-2">
+                Descripción
+              </Label>
+              <Textarea id="description" placeholder="Un breve resumen del cómic..." className="col-span-3" value={formData.description} onChange={handleInputChange} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="col-start-2 col-span-3">
+                  <Button type="button" variant="outline" className="w-full">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generar Portada con IA
+                  </Button>
+              </div>
+            </div>
           </div>
-        </div>
-        <DialogFooter>
-          <Button type="submit">Guardar Cómic</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="submit">Guardar Cómic</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
 }
+
+    
