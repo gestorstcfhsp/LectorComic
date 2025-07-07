@@ -23,7 +23,7 @@ export function Header({ children }: HeaderProps) {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Icons.logo className="h-6 w-6" />
             <span className="hidden font-bold sm:inline-block font-headline">
-              Comic Cloud Reader
+              Lector de Cómics en la Nube
             </span>
           </Link>
         </div>
@@ -34,7 +34,7 @@ export function Header({ children }: HeaderProps) {
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search comics..."
+                placeholder="Buscar cómics..."
                 className="w-full bg-background pl-8 md:w-[200px] lg:w-[320px]"
               />
             </div>
@@ -53,7 +53,7 @@ export function Header({ children }: HeaderProps) {
                   <>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">User</p>
+                        <p className="text-sm font-medium leading-none">Usuario</p>
                         <p className="text-xs leading-none text-muted-foreground">
                           user@example.com
                         </p>
@@ -61,22 +61,22 @@ export function Header({ children }: HeaderProps) {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                      <DropdownMenuItem>Profile</DropdownMenuItem>
-                      <DropdownMenuItem>Billing</DropdownMenuItem>
-                      <DropdownMenuItem>Settings</DropdownMenuItem>
+                      <DropdownMenuItem>Perfil</DropdownMenuItem>
+                      <DropdownMenuItem>Facturación</DropdownMenuItem>
+                      <DropdownMenuItem>Configuración</DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
-                      Log out
+                      Cerrar Sesión
                     </DropdownMenuItem>
                   </>
                 ) : (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link href="/login">Log In</Link>
+                      <Link href="/login">Iniciar Sesión</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/signup">Sign Up</Link>
+                      <Link href="/signup">Registrarse</Link>
                     </DropdownMenuItem>
                   </>
                 )}

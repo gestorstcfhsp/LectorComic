@@ -18,9 +18,9 @@ export function SignupForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
+        <CardTitle className="font-headline text-2xl">Crear una Cuenta</CardTitle>
         <CardDescription>
-          Join Comic Cloud Reader to start your collection.
+          Únete a Lector de Cómics en la Nube para empezar tu colección.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -40,25 +40,25 @@ export function SignupForm() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">
-              Or continue with email
+              O continuar con email
             </span>
           </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Correo Electrónico</Label>
           <Input id="email" type="email" placeholder="m@example.com" required />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Contraseña</Label>
           <Input id="password" type="password" required />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <Button className="w-full">Create account</Button>
+        <Button className="w-full">Crear cuenta</Button>
         <div className="mt-4 text-center text-sm">
-          Already have an account?{" "}
+          ¿Ya tienes una cuenta?{" "}
           <Link href="/login" className="underline">
-            Sign in
+            Inicia sesión
           </Link>
         </div>
       </CardFooter>

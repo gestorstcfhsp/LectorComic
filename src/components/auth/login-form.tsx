@@ -19,9 +19,9 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
+        <CardTitle className="font-headline text-2xl">Bienvenido de Nuevo</CardTitle>
         <CardDescription>
-          Enter your credentials to access your library.
+          Introduce tus credenciales para acceder a tu biblioteca.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -41,25 +41,25 @@ export function LoginForm() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
+              O continuar con
             </span>
           </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Correo Electrónico</Label>
           <Input id="email" type="email" placeholder="m@example.com" required />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Contraseña</Label>
           <Input id="password" type="password" required />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <Button className="w-full">Sign in</Button>
+        <Button className="w-full">Iniciar Sesión</Button>
         <div className="text-center text-sm">
-          Don&apos;t have an account?{" "}
+          ¿No tienes una cuenta?{" "}
           <Link href="/signup" className="underline">
-            Sign up
+            Regístrate
           </Link>
         </div>
       </CardFooter>

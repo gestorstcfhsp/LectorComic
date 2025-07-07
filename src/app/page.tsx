@@ -78,9 +78,9 @@ export default function Home() {
       </Header>
       <main className="flex-1 p-4 md:p-8">
         <div className="mb-8">
-          <h1 className="font-headline text-3xl md:text-4xl">My Library</h1>
+          <h1 className="font-headline text-3xl md:text-4xl">Mi Biblioteca</h1>
           <p className="text-muted-foreground">
-            Browse and manage your comic collection.
+            Explora y gestiona tu colección de cómics.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
