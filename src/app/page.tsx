@@ -1,7 +1,11 @@
 
+"use client";
+
+import { useState } from 'react';
 import { Header } from '@/components/header';
 import { ComicCard } from '@/components/comic-card';
 import { AddComicDialog } from '@/components/add-comic-dialog';
+import type { ExtractComicMetadataOutput } from '@/ai/flows/extract-comic-metadata-flow';
 
 const mockComics = [
   {
@@ -70,11 +74,41 @@ const mockComics = [
   },
 ];
 
+type Comic = {
+  id: string;
+  title: string;
+  series: string;
+  coverUrl: string;
+  tags: string[];
+  aiHint: string;
+};
+
 export default function Home() {
+  const [comics, setComics] = useState<Comic[]>(mockComics);
+
+  const handleAddComic = (data: Partial<ExtractComicMetadataOutput & { file: File | null }>) => {
+    if (!data.file || !data.title) return;
+
+    // En una app real, subirías el archivo a un servicio de almacenamiento
+    // para obtener una URL persistente. Para esta demo, usamos una URL de objeto temporal.
+    const coverUrl = URL.createObjectURL(data.file);
+    
+    const newComic: Comic = {
+      id: new Date().toISOString(),
+      title: data.title,
+      series: data.series || '',
+      coverUrl: coverUrl,
+      tags: data.tags || [],
+      aiHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
+    };
+
+    setComics(prevComics => [newComic, ...prevComics]);
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header>
-        <AddComicDialog />
+        <AddComicDialog onComicAdded={handleAddComic} />
       </Header>
       <main className="flex-1 p-4 md:p-8">
         <div className="mb-8">
@@ -84,7 +118,7 @@ export default function Home() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-          {mockComics.map((comic) => (
+          {comics.map((comic) => (
             <ComicCard key={comic.id} comic={comic} />
           ))}
         </div>

@@ -38,7 +38,11 @@ const initialFormData = {
     file: null,
 };
 
-export function AddComicDialog() {
+type AddComicDialogProps = {
+  onComicAdded: (data: Partial<ExtractComicMetadataOutput & { file: File | null }>) => void;
+};
+
+export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | null }>>(initialFormData);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -110,22 +114,19 @@ export function AddComicDialog() {
       return;
     }
     
-    // In a real app, you would upload the file and save the data.
-    // For now, we will just log it to the console.
-    console.log("Guardando cómic:", formData);
+    onComicAdded(formData);
     
     toast({
-      title: "Cómic guardado",
-      description: `"${formData.title}" ha sido añadido a tu biblioteca (revisa la consola).`,
+      title: "Cómic añadido",
+      description: `"${formData.title}" se ha añadido a tu biblioteca.`,
     });
 
-    setOpen(false); // Close dialog
+    setOpen(false);
   }
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
-      // Reset form when dialog closes
       setFormData(initialFormData);
       setIsExtracting(false);
     }
@@ -218,5 +219,3 @@ export function AddComicDialog() {
     </Dialog>
   )
 }
-
-    
