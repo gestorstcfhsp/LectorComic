@@ -8,6 +8,7 @@ export interface Comic {
   series: string;
   description: string;
   tags: string[];
+  type: string; // e.g., 'Cómic', 'Manhwa', 'Manga'
   file: Blob; // The comic file (image, cbr, cbz, pdf)
   aiHint: string;
   createdAt: Date;

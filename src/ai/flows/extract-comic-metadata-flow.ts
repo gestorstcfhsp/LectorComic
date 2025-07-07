@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to extract metadata from a comic book cover.
@@ -37,6 +38,7 @@ const ExtractComicMetadataOutputSchema = z.object({
     .describe(
       'A short, one or two sentence summary or synopsis of the comic based on its cover and title.'
     ),
+  type: z.string().describe('The type of comic, for example: "Cómic", "Manga", "Manhwa", or "Novela Gráfica".'),
   tags: z
     .array(z.string())
     .describe(
@@ -62,6 +64,7 @@ Analyze the provided cover image and filename to identify the following informat
 - Author(s)/Artist(s)
 - Series (if applicable)
 - A brief description based on the cover art and title.
+- The type of comic. It can be "Cómic" (for American/European style), "Manga" (Japanese), "Manhwa" (Korean), or "Novela Gráfica". If unsure, default to "Cómic".
 - Relevant tags (genre, publisher, main characters).
 
 If you cannot determine a piece of information, leave the corresponding field blank. Be as accurate as possible.

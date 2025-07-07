@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast"
 import { extractComicMetadata } from "@/ai/flows/extract-comic-metadata-flow"
 import type { ExtractComicMetadataOutput } from "@/ai/flows/extract-comic-metadata-flow"
 import { generateComicCover } from "@/ai/flows/generate-comic-cover-flow"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 const toDataUri = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -40,18 +41,19 @@ const initialFormData = {
     title: '',
     author: '',
     series: '',
+    type: 'Cómic',
     tags: [],
     description: '',
     file: null,
 };
 
 type AddComicDialogProps = {
-  onComicAdded: (data: Partial<ExtractComicMetadataOutput & { file: File | null }>) => void;
+  onComicAdded: (data: Partial<ExtractComicMetadataOutput & { file: File | null; type: string }>) => void;
 };
 
 export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | null }>>(initialFormData);
+  const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | null; type: string }>>(initialFormData);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const { toast } = useToast();
@@ -85,6 +87,7 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
         author: result.author,
         series: result.series,
         description: result.description,
+        type: result.type || 'Cómic',
         tags: result.tags,
       }));
 
@@ -108,6 +111,10 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: id === 'tags' ? value.split(',').map(t => t.trim()) : value }));
+  }
+
+  const handleTypeChange = (value: string) => {
+    setFormData(prev => ({ ...prev, type: value }));
   }
   
   const handleGenerateCover = async () => {
@@ -154,11 +161,11 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!formData.file || !formData.title) {
+    if (!formData.file || !formData.title || !formData.type) {
       toast({
         variant: "destructive",
         title: "Faltan datos",
-        description: "El título y el archivo del cómic son obligatorios.",
+        description: "El título, el tipo y el archivo del cómic son obligatorios.",
       });
       return;
     }
@@ -239,6 +246,23 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
                 Saga/Serie
               </Label>
               <Input id="series" placeholder="p.ej., Batman" className="col-span-3" value={formData.series} onChange={handleInputChange}/>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="type" className="text-right">
+                Tipo
+              </Label>
+              <Select value={formData.type} onValueChange={handleTypeChange}>
+                  <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Selecciona un tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="Cómic">Cómic</SelectItem>
+                      <SelectItem value="Manhwa">Manhwa</SelectItem>
+                      <SelectItem value="Manga">Manga</SelectItem>
+                      <SelectItem value="Novela Gráfica">Novela Gráfica</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
+                  </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="tags" className="text-right">
