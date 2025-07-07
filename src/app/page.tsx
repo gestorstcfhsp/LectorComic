@@ -1,108 +1,40 @@
 
 "use client";
 
-import { useState } from 'react';
 import { Header } from '@/components/header';
 import { ComicCard } from '@/components/comic-card';
 import { AddComicDialog } from '@/components/add-comic-dialog';
 import type { ExtractComicMetadataOutput } from '@/ai/flows/extract-comic-metadata-flow';
-
-const mockComics = [
-  {
-    id: '1',
-    title: 'The Amazing Spider-Man',
-    series: 'Vol. 1',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['superhero', 'marvel'],
-    aiHint: 'spider man comic',
-  },
-  {
-    id: '2',
-    title: 'Saga',
-    series: 'Chapter One',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['sci-fi', 'fantasy', 'image'],
-    aiHint: 'fantasy battle',
-  },
-  {
-    id: '3',
-    title: 'Batman: The Long Halloween',
-    series: '',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['detective', 'dc'],
-    aiHint: 'dark detective',
-  },
-  {
-    id: '4',
-    title: 'Monstress',
-    series: 'Vol. 1: Awakening',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['fantasy', 'steampunk'],
-    aiHint: 'art deco monster',
-  },
-  {
-    id: '5',
-    title: 'Paper Girls',
-    series: 'Vol. 1',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['sci-fi', 'mystery'],
-    aiHint: '80s newspaper girls',
-  },
-  {
-    id: '6',
-    title: 'Invincible',
-    series: 'Compendium One',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['superhero', 'image'],
-    aiHint: 'superhero fight',
-  },
-  {
-    id: '7',
-    title: 'Watchmen',
-    series: '',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['superhero', 'classic'],
-    aiHint: 'smiley face blood',
-  },
-  {
-    id: '8',
-    title: 'The Wicked + The Divine',
-    series: 'Vol. 1: The Faust Act',
-    coverUrl: 'https://placehold.co/400x600',
-    tags: ['fantasy', 'modern'],
-    aiHint: 'pop star gods',
-  },
-];
-
-type Comic = {
-  id: string;
-  title: string;
-  series: string;
-  coverUrl: string;
-  tags: string[];
-  aiHint: string;
-};
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db, type Comic } from '@/lib/db';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
-  const [comics, setComics] = useState<Comic[]>(mockComics);
+  const comics = useLiveQuery(
+    () => db.comics.orderBy('createdAt').reverse().toArray()
+  );
 
-  const handleAddComic = (data: Partial<ExtractComicMetadataOutput & { file: File | null }>) => {
+  const handleAddComic = async (data: Partial<ExtractComicMetadataOutput & { file: File | null }>) => {
     if (!data.file || !data.title) return;
 
-    // En una app real, subirías el archivo a un servicio de almacenamiento
-    // para obtener una URL persistente. Para esta demo, usamos una URL de objeto temporal.
-    const coverUrl = URL.createObjectURL(data.file);
-    
     const newComic: Comic = {
-      id: new Date().toISOString(),
+      id: crypto.randomUUID(),
       title: data.title,
+      author: data.author || '',
       series: data.series || '',
-      coverUrl: coverUrl,
+      description: data.description || '',
       tags: data.tags || [],
+      file: data.file,
       aiHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
+      createdAt: new Date(),
     };
 
-    setComics(prevComics => [newComic, ...prevComics]);
+    try {
+      await db.comics.add(newComic);
+    } catch (error) {
+      console.error("Failed to add comic to DB:", error);
+      // Here you could use a toast to notify the user of the failure
+    }
   };
 
   return (
@@ -118,9 +50,24 @@ export default function Home() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-          {comics.map((comic) => (
-            <ComicCard key={comic.id} comic={comic} />
-          ))}
+          {comics ? (
+            comics.length > 0 ? (
+              comics.map((comic) => (
+                <ComicCard key={comic.id} comic={comic} />
+              ))
+            ) : (
+              <p className="col-span-full text-center text-muted-foreground">Tu biblioteca está vacía. ¡Añade tu primer cómic!</p>
+            )
+          ) : (
+            // Skeletons for loading state
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="aspect-[2/3] w-full" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          )}
         </div>
       </main>
     </div>

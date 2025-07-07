@@ -1,34 +1,56 @@
 
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-
-type Comic = {
-  id: string;
-  title: string;
-  series: string;
-  coverUrl: string;
-  aiHint: string;
-  tags: string[];
-};
+import { useState, useEffect } from 'react';
+import type { Comic } from '@/lib/db';
 
 type ComicCardProps = {
   comic: Comic;
 };
 
 export function ComicCard({ comic }: ComicCardProps) {
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let url: string | null = null;
+    
+    // We only create an object URL for image files
+    if (comic.file && comic.file.type.startsWith('image/')) {
+      url = URL.createObjectURL(comic.file);
+      setCoverUrl(url);
+    }
+
+    // Cleanup function to revoke the object URL
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [comic.file]);
+
   return (
     <Link href={`/read/${comic.id}`} className="group block">
       <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary">
-        <div className="aspect-[2/3] relative">
-          <Image
-            src={comic.coverUrl}
-            alt={`Portada de ${comic.title}`}
-            fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint={comic.aiHint}
-          />
+        <div className="aspect-[2/3] relative bg-muted">
+          {coverUrl ? (
+            <Image
+              src={coverUrl}
+              alt={`Portada de ${comic.title}`}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              data-ai-hint={comic.aiHint}
+              unoptimized={true} // Necessary for blob URLs
+            />
+          ) : (
+            // Placeholder for non-image files
+            <div className="flex h-full w-full items-center justify-center p-4">
+               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground opacity-50"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+          )}
         </div>
         <CardContent className="p-3">
           <h3 className="font-headline text-base truncate" title={comic.title}>
