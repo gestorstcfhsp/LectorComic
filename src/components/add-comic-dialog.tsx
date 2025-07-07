@@ -19,6 +19,7 @@ import { PlusCircle, Sparkles, Loader2, Wand2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { extractComicMetadata } from "@/ai/flows/extract-comic-metadata-flow"
 import type { ExtractComicMetadataOutput } from "@/ai/flows/extract-comic-metadata-flow"
+import { generateComicCover } from "@/ai/flows/generate-comic-cover-flow"
 
 const toDataUri = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -27,6 +28,12 @@ const toDataUri = (file: File): Promise<string> => {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+};
+
+const dataUriToFile = async (dataUrl: string, filename: string): Promise<File> => {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return new File([blob], filename, { type: blob.type || 'image/png' });
 };
 
 const initialFormData = {
@@ -46,6 +53,7 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | null }>>(initialFormData);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +109,47 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: id === 'tags' ? value.split(',').map(t => t.trim()) : value }));
   }
+  
+  const handleGenerateCover = async () => {
+    if (!formData.title) {
+      toast({
+        variant: "destructive",
+        title: "Falta el Título",
+        description: "Por favor, introduce un título para generar la portada.",
+      });
+      return;
+    }
+    
+    setIsGeneratingCover(true);
+    try {
+      const result = await generateComicCover({
+        title: formData.title,
+        description: formData.description || '',
+      });
+      
+      const generatedFile = await dataUriToFile(result.coverImageDataUri, `${formData.title.replace(/\s/g, '_')}-cover.png`);
+
+      setFormData(prev => ({
+        ...prev,
+        file: generatedFile,
+      }));
+
+      toast({
+        title: "Portada Generada",
+        description: "Se ha generado una nueva portada con IA y se ha adjuntado como el archivo del cómic.",
+      });
+
+    } catch (error) {
+      console.error("Error generating cover:", error);
+      toast({
+        variant: "destructive",
+        title: "Error de Generación",
+        description: "No se pudo generar la portada. Por favor, inténtalo de nuevo.",
+      });
+    } finally {
+      setIsGeneratingCover(false);
+    }
+  }
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -129,6 +178,7 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
     if (!isOpen) {
       setFormData(initialFormData);
       setIsExtracting(false);
+      setIsGeneratingCover(false);
     }
   }
 
@@ -204,9 +254,15 @@ export function AddComicDialog({ onComicAdded }: AddComicDialogProps) {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <div className="col-start-2 col-span-3">
-                  <Button type="button" variant="outline" className="w-full">
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Generar Portada con IA
+                  <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={handleGenerateCover}
+                      disabled={isGeneratingCover || !formData.title}
+                  >
+                      {isGeneratingCover ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                      {isGeneratingCover ? 'Generando...' : 'Generar Portada con IA'}
                   </Button>
               </div>
             </div>
