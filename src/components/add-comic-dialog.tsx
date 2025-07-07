@@ -14,13 +14,27 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { PlusCircle, Sparkles, Loader2, Wand2 } from "lucide-react"
+import { PlusCircle, Sparkles, Loader2, Wand2, ChevronsUpDown, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { extractComicMetadata } from "@/ai/flows/extract-comic-metadata-flow"
 import type { ExtractComicMetadataOutput } from "@/ai/flows/extract-comic-metadata-flow"
 import { generateComicCover } from "@/ai/flows/generate-comic-cover-flow"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import type { Comic } from "@/lib/db"
+import { cn } from "@/lib/utils"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 
 const toDataUri = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -52,13 +66,15 @@ type ComicDialogProps = {
   onOpenChange: (isOpen: boolean) => void;
   onSave: (data: Partial<ExtractComicMetadataOutput & { file: File | Blob | null; type: string }>, id?: string) => void;
   comicToEdit?: Comic | null;
+  seriesList: string[];
 };
 
-export function AddComicDialog({ isOpen, onOpenChange, onSave, comicToEdit }: ComicDialogProps) {
+export function AddComicDialog({ isOpen, onOpenChange, onSave, comicToEdit, seriesList = [] }: ComicDialogProps) {
   const isEditing = !!comicToEdit;
   const [formData, setFormData] = useState<Partial<ExtractComicMetadataOutput & { file: File | Blob | null; type: string }>>(initialFormData);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
+  const [openSeriesPopover, setOpenSeriesPopover] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -130,6 +146,10 @@ export function AddComicDialog({ isOpen, onOpenChange, onSave, comicToEdit }: Co
     setFormData(prev => ({ ...prev, [id]: id === 'tags' ? value.split(',').map(t => t.trim()) : value }));
   }
 
+  const handleSeriesChange = (value: string) => {
+    setFormData(prev => ({...prev, series: value}));
+  }
+
   const handleTypeChange = (value: string) => {
     setFormData(prev => ({ ...prev, type: value }));
   }
@@ -186,6 +206,7 @@ export function AddComicDialog({ isOpen, onOpenChange, onSave, comicToEdit }: Co
       setFormData(initialFormData);
       setIsExtracting(false);
       setIsGeneratingCover(false);
+      setOpenSeriesPopover(false);
     }
     onOpenChange(openState);
   }
@@ -242,7 +263,51 @@ export function AddComicDialog({ isOpen, onOpenChange, onSave, comicToEdit }: Co
               <Label htmlFor="series" className="text-right">
                 Saga/Serie
               </Label>
-              <Input id="series" placeholder="p.ej., Batman" className="col-span-3" value={formData.series} onChange={handleInputChange}/>
+              <Popover open={openSeriesPopover} onOpenChange={setOpenSeriesPopover}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openSeriesPopover}
+                        className="col-span-3 w-full justify-between font-normal"
+                    >
+                        {formData.series || "Seleccionar o crear saga..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
+                    <Command>
+                        <CommandInput 
+                            placeholder="Buscar saga existente..."
+                            value={formData.series}
+                            onValueChange={handleSeriesChange}
+                        />
+                        <CommandList>
+                            <CommandEmpty>No se encontró la saga. Puedes crear una nueva.</CommandEmpty>
+                            <CommandGroup>
+                                {seriesList.map((series) => (
+                                    <CommandItem
+                                        key={series}
+                                        value={series}
+                                        onSelect={(currentValue) => {
+                                            handleSeriesChange(currentValue);
+                                            setOpenSeriesPopover(false);
+                                        }}
+                                    >
+                                        <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                formData.series === series ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                        {series}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">

@@ -24,6 +24,12 @@ export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [comicToEdit, setComicToEdit] = React.useState<Comic | null>(null);
 
+  const seriesList = React.useMemo(() => {
+    if (!comics) return [];
+    const seriesSet = new Set(comics.map(c => c.series).filter(Boolean));
+    return Array.from(seriesSet).sort((a, b) => a.localeCompare(b));
+  }, [comics]);
+
   const handleOpenAddDialog = () => {
     setComicToEdit(null);
     setIsDialogOpen(true);
@@ -232,6 +238,7 @@ export default function Home() {
         onOpenChange={setIsDialogOpen}
         onSave={handleSaveComic}
         comicToEdit={comicToEdit}
+        seriesList={seriesList}
       />
     </div>
   );
