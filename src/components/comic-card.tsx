@@ -45,15 +45,8 @@ export function ComicCard({ comic, onDelete }: ComicCardProps) {
     };
   }, [comic.file]);
 
-  const confirmDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const confirmDelete = () => {
     onDelete(comic.id, comic.title);
-  };
-  
-  const stopPropagation = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
   };
 
   return (
@@ -66,7 +59,7 @@ export function ComicCard({ comic, onDelete }: ComicCardProps) {
               size="icon"
               className="absolute top-2 right-2 z-10 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
               onClick={(e) => {
-                e.stopPropagation();
+                // Prevent the Link component from navigating when the trigger is clicked.
                 e.preventDefault();
               }}
               aria-label="Eliminar cómic"
@@ -83,7 +76,7 @@ export function ComicCard({ comic, onDelete }: ComicCardProps) {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={stopPropagation}>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={confirmDelete}
